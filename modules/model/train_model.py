@@ -1,18 +1,44 @@
 from sklearn.ensemble import (
-    RandomForestClassifier
+    RandomForestClassifier,
+    RandomForestRegressor
 )
+
 
 def train_model(
     X_train,
-    y_train
+    y_train,
+    task_type
 ):
 
-    model = RandomForestClassifier(
+    # =====================================================
+    # CLASSIFICATION MODEL
+    # =====================================================
 
-        n_estimators=200,
+    if task_type == "classification":
 
-        random_state=42
-    )
+        model = RandomForestClassifier(
+
+            n_estimators=200,
+
+            random_state=42
+        )
+
+    # =====================================================
+    # REGRESSION MODEL
+    # =====================================================
+
+    else:
+
+        model = RandomForestRegressor(
+
+            n_estimators=200,
+
+            random_state=42
+        )
+
+    # =====================================================
+    # TRAIN MODEL
+    # =====================================================
 
     model.fit(
         X_train,

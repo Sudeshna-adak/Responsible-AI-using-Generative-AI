@@ -1,5 +1,6 @@
 # =========================================================
 # UNIVERSAL RESPONSIBLE AI BIAS DETECTOR
+# FULLY UPDATED + STABLE VERSION
 # =========================================================
 
 import pandas as pd
@@ -11,11 +12,21 @@ import numpy as np
 
 def normalize_probability(value):
 
-    value = abs(value)
+    try:
 
-    value = min(max(value, 0), 1)
+        if pd.isna(value):
 
-    return round(value, 2)
+            return 0.0
+
+        value = abs(float(value))
+
+        value = min(max(value, 0), 1)
+
+        return round(value, 2)
+
+    except Exception:
+
+        return 0.0
 
 # =========================================================
 # BIAS STATUS
@@ -23,11 +34,11 @@ def normalize_probability(value):
 
 def bias_status(probability):
 
-    if probability >= 0.6:
+    if probability >= 0.60:
 
         return "High Bias"
 
-    elif probability >= 0.4:
+    elif probability >= 0.40:
 
         return "Moderate Bias"
 
@@ -41,298 +52,420 @@ def bias_status(probability):
 
 def calculate_fairness(
     df,
-    target_col
+    target_col,
+    verbose=True
 ):
 
-    print(
-        "\n========== UNIVERSAL BIAS ANALYSIS =========="
-    )
+    try:
 
-    bias_results = []
+        # =================================================
+        # START
+        # =================================================
 
-    total_rows = len(df)
+        if verbose:
 
-    # =====================================================
-    # 1. SELECTION BIAS
-    # =====================================================
+            print(
+                "\n========== FAIRNESS ANALYSIS STARTED =========="
+            )
 
-    class_distribution = (
-        df[target_col]
-        .value_counts(normalize=True)
-    )
+        bias_results = []
 
-    selection_bias = (
-        class_distribution.max()
-        -
-        class_distribution.min()
-    )
+        total_rows = len(df)
 
-    selection_bias = normalize_probability(
-        selection_bias
-    )
+        # =================================================
+        # SAFETY CHECK
+        # =================================================
 
-    bias_results.append({
+        if total_rows == 0:
 
-        "Bias Type":
-        "Selection Bias",
+            raise ValueError(
+                "Dataset is empty."
+            )
 
-        "Probability":
-        selection_bias,
+        if target_col not in df.columns:
 
-        "Bias Status":
-        bias_status(selection_bias)
-    })
+            raise ValueError(
+                f"Target column '{target_col}' not found."
+            )
 
-    # =====================================================
-    # 2. SAMPLING BIAS
-    # =====================================================
+        # =================================================
+        # CLASS DISTRIBUTION
+        # =================================================
 
-    sampling_bias = abs(
+        class_distribution = (
 
-        len(df.sample(frac=0.5))
-
-        / total_rows
-
-        - 0.5
-    )
-
-    sampling_bias = normalize_probability(
-        sampling_bias
-    )
-
-    bias_results.append({
-
-        "Bias Type":
-        "Sampling Bias",
-
-        "Probability":
-        sampling_bias,
-
-        "Bias Status":
-        bias_status(sampling_bias)
-    })
-
-    # =====================================================
-    # 3. RESPONSE BIAS
-    # =====================================================
-
-    missing_ratio = (
-
-        df.isnull()
-        .sum()
-        .sum()
-
-        /
-
-        (df.shape[0] * df.shape[1])
-    )
-
-    response_bias = normalize_probability(
-        missing_ratio
-    )
-
-    bias_results.append({
-
-        "Bias Type":
-        "Response Bias",
-
-        "Probability":
-        response_bias,
-
-        "Bias Status":
-        bias_status(response_bias)
-    })
-
-    # =====================================================
-    # 4. LABEL BIAS
-    # =====================================================
-
-    label_bias = (
-
-        class_distribution.std()
-    )
-
-    label_bias = normalize_probability(
-        label_bias
-    )
-
-    bias_results.append({
-
-        "Bias Type":
-        "Label Bias",
-
-        "Probability":
-        label_bias,
-
-        "Bias Status":
-        bias_status(label_bias)
-    })
-
-    # =====================================================
-    # 5. MEASUREMENT BIAS
-    # =====================================================
-
-    numeric_cols = df.select_dtypes(
-        include=np.number
-    ).columns
-
-    measurement_bias = 0
-
-    if len(numeric_cols) > 0:
-
-        measurement_bias = np.mean([
-
-            abs(df[col].skew())
-
-            for col in numeric_cols
-
-        ]) / 10
-
-    measurement_bias = normalize_probability(
-        measurement_bias
-    )
-
-    bias_results.append({
-
-        "Bias Type":
-        "Measurement Bias",
-
-        "Probability":
-        measurement_bias,
-
-        "Bias Status":
-        bias_status(measurement_bias)
-    })
-
-    # =====================================================
-    # 6. REPRESENTATION BIAS
-    # =====================================================
-
-    representation_bias = (
-
-        1
-        -
-        class_distribution.min()
-    )
-
-    representation_bias = normalize_probability(
-        representation_bias
-    )
-
-    bias_results.append({
-
-        "Bias Type":
-        "Representation Bias",
-
-        "Probability":
-        representation_bias,
-
-        "Bias Status":
-        bias_status(representation_bias)
-    })
-
-    # =====================================================
-    # 7. PROXY BIAS
-    # =====================================================
-
-    proxy_bias = 0
-
-    if len(numeric_cols) > 1:
-
-        corr_matrix = (
-            df[numeric_cols]
-            .corr()
-            .abs()
+            df[target_col]
+            .value_counts(normalize=True)
         )
 
-        proxy_bias = (
-            corr_matrix.mean().mean()
-        ) / 2
+        # =================================================
+        # 1. SELECTION BIAS
+        # =================================================
 
-    proxy_bias = normalize_probability(
-        proxy_bias
-    )
+        selection_bias = (
 
-    bias_results.append({
+            class_distribution.max()
+            -
+            class_distribution.min()
+        )
 
-        "Bias Type":
-        "Proxy Bias",
+        selection_bias = normalize_probability(
+            selection_bias
+        )
 
-        "Probability":
-        proxy_bias,
+        bias_results.append({
 
-        "Bias Status":
-        bias_status(proxy_bias)
-    })
+            "Bias Type":
+            "Selection Bias",
 
-    # =====================================================
-    # 8. CONFIRMATION BIAS
-    # =====================================================
+            "Probability":
+            selection_bias,
 
-    confirmation_bias = 0
+            "Bias Status":
+            bias_status(selection_bias)
+        })
 
-    if len(numeric_cols) > 0:
+        # =================================================
+        # 2. SAMPLING BIAS
+        # =================================================
 
-        variances = [
+        sample_size = max(
+            int(total_rows * 0.5),
+            1
+        )
 
-            df[col].var()
+        sampling_bias = abs(
 
-            for col in numeric_cols
-        ]
+            len(
+                df.sample(
+                    n=sample_size,
+                    random_state=42
+                )
+            )
 
-        confirmation_bias = (
+            / total_rows
+
+            - 0.5
+        )
+
+        sampling_bias = normalize_probability(
+            sampling_bias
+        )
+
+        bias_results.append({
+
+            "Bias Type":
+            "Sampling Bias",
+
+            "Probability":
+            sampling_bias,
+
+            "Bias Status":
+            bias_status(sampling_bias)
+        })
+
+        # =================================================
+        # 3. RESPONSE BIAS
+        # =================================================
+
+        missing_ratio = (
+
+            df.isnull()
+            .sum()
+            .sum()
+
+            /
+
+            (df.shape[0] * df.shape[1])
+        )
+
+        response_bias = normalize_probability(
+            missing_ratio
+        )
+
+        bias_results.append({
+
+            "Bias Type":
+            "Response Bias",
+
+            "Probability":
+            response_bias,
+
+            "Bias Status":
+            bias_status(response_bias)
+        })
+
+        # =================================================
+        # 4. LABEL BIAS
+        # =================================================
+
+        label_bias = (
+            class_distribution.std()
+        )
+
+        label_bias = normalize_probability(
+            label_bias
+        )
+
+        bias_results.append({
+
+            "Bias Type":
+            "Label Bias",
+
+            "Probability":
+            label_bias,
+
+            "Bias Status":
+            bias_status(label_bias)
+        })
+
+        # =================================================
+        # NUMERIC COLUMNS
+        # =================================================
+
+        numeric_cols = df.select_dtypes(
+            include=np.number
+        ).columns.tolist()
+
+        # =================================================
+        # REMOVE TARGET FROM NUMERIC COLS
+        # =================================================
+
+        if target_col in numeric_cols:
+
+            numeric_cols.remove(
+                target_col
+            )
+
+        # =================================================
+        # 5. MEASUREMENT BIAS
+        # =================================================
+
+        measurement_bias = 0
+
+        if len(numeric_cols) > 0:
+
+            skewness_values = []
+
+            for col in numeric_cols:
+
+                try:
+
+                    skew_val = abs(
+                        df[col].skew()
+                    )
+
+                    if not pd.isna(skew_val):
+
+                        skewness_values.append(
+                            skew_val
+                        )
+
+                except Exception:
+
+                    continue
+
+            if len(skewness_values) > 0:
+
+                measurement_bias = (
+                    np.mean(skewness_values)
+                    / 10
+                )
+
+        measurement_bias = normalize_probability(
+            measurement_bias
+        )
+
+        bias_results.append({
+
+            "Bias Type":
+            "Measurement Bias",
+
+            "Probability":
+            measurement_bias,
+
+            "Bias Status":
+            bias_status(measurement_bias)
+        })
+
+        # =================================================
+        # 6. REPRESENTATION BIAS
+        # =================================================
+
+        representation_bias = (
 
             1
-            /
-            (
-                np.mean(variances)
-                + 1
-            )
+            -
+            class_distribution.min()
         )
 
-    confirmation_bias = normalize_probability(
-        confirmation_bias
-    )
+        representation_bias = normalize_probability(
+            representation_bias
+        )
 
-    bias_results.append({
+        bias_results.append({
 
-        "Bias Type":
-        "Confirmation Bias",
+            "Bias Type":
+            "Representation Bias",
 
-        "Probability":
-        confirmation_bias,
+            "Probability":
+            representation_bias,
 
-        "Bias Status":
-        bias_status(confirmation_bias)
-    })
+            "Bias Status":
+            bias_status(representation_bias)
+        })
 
-    # =====================================================
-    # FINAL DATAFRAME
-    # =====================================================
+        # =================================================
+        # 7. PROXY BIAS
+        # =================================================
 
-    bias_df = pd.DataFrame(
-        bias_results
-    )
+        proxy_bias = 0
 
-    print(
-        "\n========== BIAS REPORT ==========\n"
-    )
+        if len(numeric_cols) > 1:
 
-    print(
-        bias_df.to_string(index=False)
-    )
+            try:
 
-    # =====================================================
-    # FAIRNESS SCORE
-    # =====================================================
+                corr_matrix = (
 
-    avg_bias = bias_df[
-        "Probability"
-    ].mean()
+                    df[numeric_cols]
+                    .corr()
+                    .abs()
+                )
 
-    fairness_score = round(
-        1 - avg_bias,
-        2
-    )
+                np.fill_diagonal(
+                    corr_matrix.values,
+                    0
+                )
 
-    return bias_df, fairness_score
+                proxy_bias = (
+
+                    corr_matrix.mean().mean()
+                ) / 2
+
+            except Exception:
+
+                proxy_bias = 0
+
+        proxy_bias = normalize_probability(
+            proxy_bias
+        )
+
+        bias_results.append({
+
+            "Bias Type":
+            "Proxy Bias",
+
+            "Probability":
+            proxy_bias,
+
+            "Bias Status":
+            bias_status(proxy_bias)
+        })
+
+        # =================================================
+        # 8. CONFIRMATION BIAS
+        # =================================================
+
+        confirmation_bias = 0
+
+        if len(numeric_cols) > 0:
+
+            try:
+
+                variances = []
+
+                for col in numeric_cols:
+
+                    var = df[col].var()
+
+                    if not pd.isna(var):
+
+                        variances.append(var)
+
+                if len(variances) > 0:
+
+                    confirmation_bias = (
+
+                        1
+                        /
+                        (
+                            np.mean(variances)
+                            + 1
+                        )
+                    )
+
+            except Exception:
+
+                confirmation_bias = 0
+
+        confirmation_bias = normalize_probability(
+            confirmation_bias
+        )
+
+        bias_results.append({
+
+            "Bias Type":
+            "Confirmation Bias",
+
+            "Probability":
+            confirmation_bias,
+
+            "Bias Status":
+            bias_status(confirmation_bias)
+        })
+
+        # =================================================
+        # FINAL DATAFRAME
+        # =================================================
+
+        bias_df = pd.DataFrame(
+            bias_results
+        )
+
+        # =================================================
+        # FAIRNESS SCORE
+        # =================================================
+
+        avg_bias = bias_df[
+            "Probability"
+        ].mean()
+
+        fairness_score = round(
+            1 - avg_bias,
+            2
+        )
+
+        fairness_score = max(
+            fairness_score,
+            0
+        )
+
+        # =================================================
+        # RETURN
+        # =================================================
+
+        return bias_df, fairness_score
+
+    except Exception as e:
+
+        print(
+            f"\nFairness Calculation Error: {e}"
+        )
+
+        # =================================================
+        # FAILSAFE OUTPUT
+        # =================================================
+
+        fallback_df = pd.DataFrame([{
+
+            "Bias Type":
+            "Unknown",
+
+            "Probability":
+            0.0,
+
+            "Bias Status":
+            "Low Bias"
+        }])
+
+        return fallback_df, 0.5

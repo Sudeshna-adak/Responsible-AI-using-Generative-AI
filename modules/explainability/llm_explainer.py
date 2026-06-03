@@ -1,38 +1,27 @@
 # =========================================================
 # LLM EXPLAINER WITH GROQ INTEGRATION
-# FINAL IMPROVED VERSION
+# FINAL PROFESSIONAL VERSION
 # =========================================================
 
 import os
 
-from dotenv import load_dotenv
 from groq import Groq
 
-
-# =========================================================
-# LOAD ENVIRONMENT VARIABLES
-# =========================================================
-
-load_dotenv()
-
+from config import GROQ_API_KEY
 
 # =========================================================
 # GROQ API CONFIGURATION
 # =========================================================
 
-API_KEY = os.getenv("GROQ_API_KEY")
-
 MODEL_NAME = "llama-3.3-70b-versatile"
-
 
 # =========================================================
 # INITIALIZE GROQ CLIENT
 # =========================================================
 
 client = Groq(
-    api_key=API_KEY
+    api_key=GROQ_API_KEY
 )
-
 
 # =========================================================
 # LLM EXPLANATION FUNCTION
@@ -311,14 +300,14 @@ and enhanced overall dataset reliability.
     # CHECK API KEY
     # =====================================================
 
-    if not API_KEY:
+    if not GROQ_API_KEY:
 
         print(
-            "\nGROQ_API_KEY not found."
+            "\nLLM service unavailable"
         )
 
         print(
-            "\nUsing Local Explanation Only."
+            "\nUsing local explanation only."
         )
 
         return local_explanation
@@ -392,7 +381,7 @@ Use professional but simple language.
     try:
 
         print(
-            "\nGenerating AI Explanation "
+            "\nGenerating AI explanation "
             "using Groq..."
         )
 
@@ -436,9 +425,7 @@ Use professional but simple language.
         ai_explanation = (
 
             response
-
             .choices[0]
-
             .message.content
         )
 
@@ -490,16 +477,14 @@ Use professional but simple language.
     # ERROR HANDLING
     # =====================================================
 
-    except Exception as e:
+    except Exception:
 
         print(
-            "\nLLM API Integration Failed"
+            "\nLLM service unavailable"
         )
 
-        print(f"\nReason:\n{e}")
-
         print(
-            "\nUsing Local Explanation Only."
+            "\nUsing local explanation only."
         )
 
         return local_explanation

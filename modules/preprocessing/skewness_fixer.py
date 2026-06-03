@@ -1,6 +1,29 @@
 import numpy as np
 
 
+# =========================================================
+# ORDINAL / CATEGORICAL NUMERIC COLUMNS
+# =========================================================
+
+ordinal_columns = [
+
+    "Education",
+    "EnvironmentSatisfaction",
+    "JobInvolvement",
+    "JobLevel",
+    "JobSatisfaction",
+    "PerformanceRating",
+    "RelationshipSatisfaction",
+    "StockOptionLevel",
+    "TrainingTimesLastYear",
+    "WorkLifeBalance"
+]
+
+
+# =========================================================
+# FIX SKEWNESS
+# =========================================================
+
 def fix_skewness(
     df,
     target_col
@@ -21,14 +44,31 @@ def fix_skewness(
 
             try:
 
+                # =====================================
+                # SKIP ORDINAL COLUMNS
+                # =====================================
+
+                if col in ordinal_columns:
+
+                    print(
+                        f"{col} → "
+                        f"Ordinal Column Skipped"
+                    )
+
+                    continue
+
                 skew_val = df[col].skew()
 
-                # -----------------------------------
+                # =====================================
                 # HIGH SKEWNESS
-                # -----------------------------------
+                # =====================================
+
                 if abs(skew_val) > 1:
 
-                    # Positive only
+                    # ---------------------------------
+                    # POSITIVE VALUES ONLY
+                    # ---------------------------------
+
                     if (df[col] > 0).all():
 
                         df[col] = np.log1p(
@@ -40,7 +80,10 @@ def fix_skewness(
                             f"Log Transform"
                         )
 
-                    # Contains negatives
+                    # ---------------------------------
+                    # NEGATIVE VALUES PRESENT
+                    # ---------------------------------
+
                     else:
 
                         shift = (

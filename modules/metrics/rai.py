@@ -1,60 +1,64 @@
+# =========================================================
+# RESPONSIBLE AI INDEX (RAI)
+# =========================================================
+
+import numpy as np
+
+
 def calculate_rai(
     edqs,
-    eri,
-    bias_count,
-    total_biases
+    fairness,
+    accuracy,
+    eri
 ):
 
-    print("\n========== RAI CALCULATION ==========")
+    """
+    RESPONSIBLE AI INDEX (RAI)
 
-    edqs_norm = edqs / 100
+    Higher = Better
+    Range  = 0 to 100
+    """
 
-    eri_norm = eri / 100
+    # =====================================================
+    # NORMALIZATION
+    # =====================================================
 
-    bias_norm = (
-        bias_count / total_biases
+    fairness_score = fairness * 100
+
+    accuracy_score = accuracy * 100
+
+    ethical_score = (1 - eri) * 100
+
+    # =====================================================
+    # RESPONSIBLE AI FORMULA
+    # =====================================================
+
+    rai_score = (
+
+        0.30 * edqs +
+
+        0.30 * fairness_score +
+
+        0.25 * accuracy_score +
+
+        0.15 * ethical_score
     )
 
-    fairness = edqs_norm
+    # =====================================================
+    # CLIPPING
+    # =====================================================
 
-    safety = 1 - eri_norm
+    rai_score = np.clip(
+        rai_score,
+        0,
+        100
+    )
 
-    transparency = 1 - bias_norm
+    # =====================================================
+    # ROUNDING
+    # =====================================================
 
-    # Weighted model
-    w1, w2, w3 = 0.4, 0.4, 0.2
-
-    rai = (
-        w1 * fairness
-        +
-        w2 * safety
-        +
-        w3 * transparency
-    ) * 100
-
-    # -----------------------------------
-    # STATUS
-    # -----------------------------------
-    if rai >= 80:
-
-        status = (
-            "HIGHLY TRUSTWORTHY AI"
-        )
-
-    elif rai >= 60:
-
-        status = (
-            "MODERATELY TRUSTWORTHY AI"
-        )
-
-    else:
-
-        status = (
-            "HIGH RISK AI SYSTEM"
-        )
-
-    print(f"\nRAI Score : {rai:.2f}")
-
-    print(f"AI Status : {status}")
-
-    return rai, status
+    return round(
+        float(rai_score),
+        2
+    )

@@ -1,49 +1,24 @@
-# =========================================================
+# ==========================================================
 # RESPONSIBLE AI PIPELINE
-# FINAL FULLY FIXED OPTIMIZED VERSION
-# =========================================================
+# FULL UPDATED MAIN.PY
+# ==========================================================
 
 import os
 import gc
 import warnings
+import tkinter as tk
 
 warnings.filterwarnings("ignore")
-
-# =========================================================
-# MATPLOTLIB BACKEND FIX
-# =========================================================
 
 import matplotlib
 matplotlib.use("Agg")
 
-# =========================================================
-# FAST MODE
-# =========================================================
-
-FAST_MODE = True
-
-# =========================================================
-# BASIC LIBRARIES
-# =========================================================
-
-import tkinter as tk
-from tkinter import filedialog
-
 import pandas as pd
 import numpy as np
-
 import matplotlib.pyplot as plt
-import seaborn as sns
 
-# =========================================================
-# SKLEARN
-# =========================================================
-
+from tkinter import filedialog
 from sklearn.model_selection import train_test_split
-
-# =========================================================
-# REPORTLAB
-# =========================================================
 
 from reportlab.platypus import (
     SimpleDocTemplate,
@@ -51,132 +26,236 @@ from reportlab.platypus import (
     Spacer
 )
 
-from reportlab.lib.styles import (
-    getSampleStyleSheet
-)
-
+from reportlab.lib.styles import getSampleStyleSheet
 from xml.sax.saxutils import escape
 
-# =========================================================
-# PROJECT MODULES
-# =========================================================
+# ==========================================================
+# DATASET MODULES
+# ==========================================================
 
 from modules.dataset.loader import load_dataset
+from modules.dataset.validator import validate_dataset
+from modules.dataset.summary import dataset_summary
 
-from modules.dataset.validator import (
-    validate_dataset
-)
+# ==========================================================
+# PREPROCESSING
+# ==========================================================
 
-from modules.dataset.summary import (
-    dataset_summary
-)
+from modules.preprocessing.preprocessing_pipeline import preprocess_dataset
+from modules.preprocessing.skewness_fixer import fix_skewness
 
-from modules.preprocessing.preprocessing_pipeline import (
-    preprocess_dataset
-)
+# ==========================================================
+# BALANCING
+# ==========================================================
 
-from modules.preprocessing.skewness_fixer import (
-    fix_skewness
-)
+from modules.balancing.imbalance_detector import detect_imbalance
+from modules.balancing.imbalance_report import imbalance_report
+from modules.balancing.smote_module import apply_smote
 
-from modules.balancing.imbalance_detector import (
-    detect_imbalance
-)
+# ==========================================================
+# SYNTHETIC DATA
+# ==========================================================
 
-from modules.balancing.imbalance_report import (
-    imbalance_report
-)
+from modules.synthetic.ctgan_generator import generate_ctgan_data
 
-from modules.balancing.smote_module import (
-    apply_smote
-)
+# ==========================================================
+# FAIRNESS / BIAS
+# ==========================================================
 
-from modules.synthetic.ctgan_generator import (
-    generate_ctgan_data
-)
+from modules.bias.fairness_metrics import calculate_fairness
+from modules.bias.fairness_fix import apply_fairness_fix
 
-from modules.bias.fairness_metrics import (
-    calculate_fairness
-)
+# ==========================================================
+# METRICS
+# ==========================================================
 
-from modules.bias.fairness_fix import (
-    apply_fairness_fix
-)
+from modules.metrics.edqs import calculate_edqs
+from modules.metrics.eri import calculate_eri
+from modules.metrics.rai import calculate_rai
 
-from modules.metrics.edqs import (
-    calculate_edqs
-)
+# ==========================================================
+# MODEL
+# ==========================================================
 
-from modules.model.train_model import (
-    train_model
-)
+from modules.model.train_model import train_model
+from modules.model.evaluate_model import evaluate_model
+from modules.model.save_model import save_model
 
-from modules.model.evaluate_model import (
-    evaluate_model
-)
-
-from modules.model.save_model import (
-    save_model
-)
+# ==========================================================
+# VISUALIZATION
+# ==========================================================
 
 from modules.visualization.before_after_graphs import (
     plot_before_after_counts
-)
-
-from modules.visualization.boxplots import (
-    plot_boxplots
-)
-
-from modules.visualization.heatmaps import (
-    plot_heatmaps
-)
-
-from modules.visualization.piecharts import (
-    plot_piecharts
 )
 
 from modules.visualization.edqs_graph import (
     plot_edqs_comparison
 )
 
+from modules.visualization.bias_visualizations import (
+    bias_bar_graph,
+    bias_heatmap,
+    fairness_comparison_chart
+)
+
+from modules.visualization.model_metric_graphs import (
+    plot_model_metrics_before_after
+)
+
+# ==========================================================
+# UTILITIES
+# ==========================================================
+
+from modules.utils.save_metrics import save_metrics
 from modules.utils.logger import (
     set_log_file,
     write_log
 )
 
-# =========================================================
-# MEMORY OPTIMIZER
-# =========================================================
+# ==========================================================
+# LLM
+# ==========================================================
+
+from modules.llm.llm_decision_engine import (
+    generate_llm_analysis,
+    generate_llm_recommendations
+)
+
+# ==========================================================
+# CONFIG
+# ==========================================================
+
+FAST_MODE = True
+TEST_SIZE = 0.20
+RANDOM_STATE = 42
+
+os.makedirs("outputs", exist_ok=True)
+
+METRICS_TEXT_PATH = os.path.join(
+    "outputs",
+    "all_metrics_log.txt"
+)
+
+with open(
+    METRICS_TEXT_PATH,
+    "w",
+    encoding="utf-8"
+) as f:
+
+    f.write(
+        "RESPONSIBLE AI METRICS LOG\n\n"
+    )
+
+# ==========================================================
+# MEMORY OPTIMIZATION
+# ==========================================================
 
 def optimize_memory():
 
     gc.collect()
+    plt.close("all")
 
-    plt.close('all')
+# ==========================================================
+# PRINT SECTION
+# ==========================================================
+
+def print_section(title):
 
     print(
-        "\nMemory Optimization Completed"
+        f"\n{'='*20} {title} {'='*20}"
     )
 
-# =========================================================
-# UNIVERSAL FILE PICKER
-# =========================================================
+# ==========================================================
+# SAVE METRICS
+# ==========================================================
+
+def append_metrics_to_txt(
+    title,
+    data
+):
+
+    with open(
+        METRICS_TEXT_PATH,
+        "a",
+        encoding="utf-8"
+    ) as f:
+
+        f.write(
+            f"\n{'='*60}\n"
+            f"{title}\n"
+            f"{'='*60}\n\n"
+        )
+
+        if isinstance(data, dict):
+
+            for k, v in data.items():
+
+                f.write(
+                    f"{k} : {v}\n"
+                )
+
+        else:
+
+            f.write(str(data))
+
+        f.write("\n")
+
+# ==========================================================
+# LLM ITERATION LOGGER
+# ==========================================================
+
+def log_llm_iteration(
+    iteration,
+    metrics_dict
+):
+
+    output_path = os.path.join(
+        "outputs",
+        "llm_iteration_metrics.txt"
+    )
+
+    with open(
+        output_path,
+        "a",
+        encoding="utf-8"
+    ) as f:
+
+        f.write(
+            f"\n{'='*60}\n"
+            f"LLM ITERATION {iteration}\n"
+            f"{'='*60}\n\n"
+        )
+
+        for k, v in metrics_dict.items():
+
+            f.write(
+                f"{k} : {v}\n"
+            )
+
+        f.write("\n")
+
+# ==========================================================
+# FILE CHOOSER
+# ==========================================================
 
 def choose_file():
 
     try:
 
         root = tk.Tk()
-
         root.withdraw()
 
-        root.attributes('-topmost', True)
+        root.attributes(
+            '-topmost',
+            True
+        )
 
         file_path = filedialog.askopenfilename(
-
             title="Select CSV Dataset",
-
-            filetypes=[("CSV Files", "*.csv")]
+            filetypes=[
+                ("CSV Files", "*.csv")
+            ]
         )
 
         root.destroy()
@@ -201,83 +280,113 @@ def choose_file():
 
         return file_path
 
-    raise FileNotFoundError(
-        f"\nFile Not Found:\n{file_path}"
-    )
+    raise FileNotFoundError(file_path)
 
-# =========================================================
-# PRINT SECTION
-# =========================================================
-
-def print_section(title):
-
-    print(
-        f"\n{'=' * 20} "
-        f"{title} "
-        f"{'=' * 20}"
-    )
-
-# =========================================================
-# TARGET COLUMN DETECTION
-# =========================================================
+# ==========================================================
+# TARGET DETECTION
+# ==========================================================
 
 def detect_target_column(df):
 
-    possible_targets = [
+    print("\nDetecting Target Column...")
 
-        col for col in df.columns
-
-        if any(
-
-            keyword in col.lower()
-
-            for keyword in [
-
-                "target",
-                "label",
-                "class",
-                "output",
-                "result",
-                "stroke"
-            ]
-        )
+    target_keywords = [
+        "target",
+        "label",
+        "class",
+        "output",
+        "result",
+        "response",
+        "status",
+        "prediction",
+        "survived",
+        "default",
+        "churn",
+        "risk",
+        "score",
+        "rating"
     ]
 
-    if possible_targets:
+    excluded_keywords = [
+        "id",
+        "serial",
+        "phone",
+        "email",
+        "timestamp",
+        "date",
+        "time"
+    ]
 
-        return possible_targets[-1]
+    scores = {}
 
-    return df.columns[-1]
-
-# =========================================================
-# CATEGORICAL COLUMN DETECTION
-# =========================================================
-
-def detect_categorical_columns(
-    df,
-    target_col
-):
-
-    categorical_cols = []
+    total_rows = len(df)
 
     for col in df.columns:
 
-        if col == target_col:
+        score = 0
+
+        lower_col = col.lower()
+
+        unique_values = df[col].nunique()
+
+        unique_ratio = unique_values / max(total_rows, 1)
+
+        dtype = str(df[col].dtype)
+
+        if unique_values <= 1:
             continue
 
-        if df[col].dtype == "object":
+        if any(
+            x in lower_col
+            for x in excluded_keywords
+        ):
+            score -= 100
 
-            categorical_cols.append(col)
+        if any(
+            x in lower_col
+            for x in target_keywords
+        ):
+            score += 60
 
-        elif df[col].nunique() <= 10:
+        if col == df.columns[-1]:
+            score += 30
 
-            categorical_cols.append(col)
+        if dtype == "object":
+            score += 20
 
-    return categorical_cols
+        if unique_values <= 10:
+            score += 25
 
-# =========================================================
-# GRAPH OUTPUT DIRECTORY
-# =========================================================
+        if unique_ratio > 0.95:
+            score -= 40
+
+        scores[col] = score
+
+    sorted_scores = sorted(
+        scores.items(),
+        key=lambda x: x[1],
+        reverse=True
+    )
+
+    print(
+        "\n========== TARGET COLUMN SCORES =========="
+    )
+
+    for col, score in sorted_scores:
+
+        print(f"{col} --> {score}")
+
+    target_col = sorted_scores[0][0]
+
+    print(
+        f"\nDetected Target Column : {target_col}"
+    )
+
+    return target_col
+
+# ==========================================================
+# GRAPH FOLDER
+# ==========================================================
 
 def create_graph_output_folder(dataset_name):
 
@@ -287,37 +396,16 @@ def create_graph_output_folder(dataset_name):
         dataset_name.replace(".csv", "")
     )
 
-    plt.close('all')
-
-    optimize_memory()
-
     os.makedirs(
         graph_dir,
         exist_ok=True
     )
 
-    for file in os.listdir(graph_dir):
-
-        if file.endswith(".png"):
-
-            file_path = os.path.join(
-                graph_dir,
-                file
-            )
-
-            try:
-
-                os.remove(file_path)
-
-            except Exception as e:
-
-                print(e)
-
     return graph_dir
 
-# =========================================================
-# SAVE GRAPH FUNCTION
-# =========================================================
+# ==========================================================
+# SAVE GRAPH
+# ==========================================================
 
 def save_current_graph(
     graph_dir,
@@ -326,86 +414,32 @@ def save_current_graph(
 
     try:
 
-        os.makedirs(
-            graph_dir,
-            exist_ok=True
-        )
-
         output_path = os.path.join(
             graph_dir,
             f"{graph_name}.png"
         )
 
-        fig = plt.gcf()
+        plt.tight_layout()
 
-        plt.draw()
-
-        fig.tight_layout()
-
-        dpi_value = 100 if FAST_MODE else 300
-
-        fig.savefig(
+        plt.savefig(
             output_path,
-            dpi=dpi_value,
-            bbox_inches='tight',
-            facecolor='white'
+            dpi=100,
+            bbox_inches="tight"
         )
 
         print(
-            f"\nGraph Saved Successfully:"
-            f"\n{output_path}"
+            f"\nGraph Saved Successfully:\n{output_path}"
         )
 
-        plt.close(fig)
-
-        optimize_memory()
+        plt.close()
 
     except Exception as e:
 
         print(e)
 
-# =========================================================
-# PDF REPORT GENERATOR
-# =========================================================
-
-def generate_pdf_report(
-    output_path,
-    content
-):
-
-    doc = SimpleDocTemplate(
-        output_path
-    )
-
-    styles = getSampleStyleSheet()
-
-    story = []
-
-    for line in content.split("\n"):
-
-        safe_line = escape(line)
-
-        story.append(
-
-            Paragraph(
-                safe_line,
-                styles["BodyText"]
-            )
-        )
-
-        story.append(
-            Spacer(1, 10)
-        )
-
-    doc.build(story)
-
-    print(
-        "\nPDF Report Generated Successfully"
-    )
-
-# =========================================================
-# MAIN PIPELINE
-# =========================================================
+# ==========================================================
+# MAIN
+# ==========================================================
 
 def main():
 
@@ -413,357 +447,366 @@ def main():
         "RESPONSIBLE AI PIPELINE STARTED"
     )
 
-    # =====================================================
-    # FILE SELECTION
-    # =====================================================
-
     file_path = choose_file()
-
-    # =====================================================
-    # LOAD DATASET
-    # =====================================================
 
     df = load_dataset(file_path)
 
-    optimize_memory()
-
-    dataset_name = os.path.basename(
-        file_path
-    )
-
-    # =====================================================
-    # FAST MODE REDUCTION
-    # =====================================================
-
-    if FAST_MODE and len(df) > 100000:
-
-        print(
-            "\nFAST MODE LARGE DATASET REDUCTION ENABLED"
-        )
-
-        df = df.sample(
-            n=50000,
-            random_state=42
-        )
-
-    # =====================================================
-    # TARGET COLUMN
-    # =====================================================
-
-    target_col = detect_target_column(df)
-
-    print(
-        f"\nTarget Column: {target_col}"
-    )
-
-    # =====================================================
-    # GRAPH DIRECTORY
-    # =====================================================
+    dataset_name = os.path.basename(file_path)
 
     graph_dir = create_graph_output_folder(
         dataset_name
     )
 
-    # =====================================================
-    # LOGGER
-    # =====================================================
-
     set_log_file(dataset_name)
-
-    write_log(
-        f"Dataset Name: {dataset_name}"
-    )
-
-    write_log(
-        f"Dataset Shape: {df.shape}"
-    )
-
-    # =====================================================
-    # VALIDATION
-    # =====================================================
-
-    validate_dataset(df)
-
-    # =====================================================
-    # SUMMARY
-    # =====================================================
-
-    dataset_summary(df)
-
-    # =====================================================
-    # COPY BEFORE PROCESSING
-    # =====================================================
-
-    if len(df) > 50000:
-
-        df_before = df.sample(
-            n=5000,
-            random_state=42
-        ).copy()
-
-    else:
-
-        df_before = df.copy()
-
-    # =====================================================
-    # PREPROCESSING
-    # =====================================================
-
-    df, encoders = preprocess_dataset(df)
 
     optimize_memory()
 
+    validate_dataset(df)
+
+    dataset_summary(df)
+
+    target_col = detect_target_column(df)
+
     print(
-        "\nPreprocessing Completed"
+        f"\nTarget Column : {target_col}"
     )
 
-    # =====================================================
-    # REMOVE EXTRA COLUMN
-    # =====================================================
+    # ======================================================
+    # TASK TYPE
+    # ======================================================
 
-    if "data_type" in df.columns:
+    unique_count = df[target_col].nunique()
 
-        df.drop(
-            columns=["data_type"],
-            inplace=True
+    total_rows = len(df)
+
+    if (
+        pd.api.types.is_numeric_dtype(
+            df[target_col]
         )
+        and (
+            unique_count > 15
+            or unique_count / total_rows > 0.05
+        )
+    ):
 
-    # =====================================================
-    # EDQS BEFORE
-    # =====================================================
+        task_type = "regression"
+
+    else:
+
+        task_type = "classification"
+
+    print(
+        f"\nTask Type : {task_type.upper()}"
+    )
+
+    # ======================================================
+    # PREPROCESSING
+    # ======================================================
+
+    df_before = df.copy()
+
+    target_series = df[target_col].copy()
+
+    features_df = df.drop(
+        columns=[target_col]
+    )
+
+    features_df, encoders = preprocess_dataset(
+        features_df
+    )
+
+    df = pd.concat(
+        [
+            features_df.reset_index(drop=True),
+            target_series.reset_index(drop=True)
+        ],
+        axis=1
+    )
+
+    # ======================================================
+    # INITIAL METRICS
+    # ======================================================
 
     edqs_before_metrics = calculate_edqs(
         df,
-        target_col
+        target_col,
+        task_type
     )
 
-    edqs_before = (
-        edqs_before_metrics["edqs"]
-    )
+    edqs_before = edqs_before_metrics["edqs"]
 
-    # =====================================================
-    # IMBALANCE DETECTION
-    # =====================================================
+    if task_type == "classification":
 
-    imbalance_ratio, class_counts = (
-        detect_imbalance(
-            df,
-            target_col
-        )
-    )
-
-    imbalance_report(class_counts)
-
-    # =====================================================
-    # CATEGORICAL COLUMNS
-    # =====================================================
-
-    categorical_cols = (
-        detect_categorical_columns(
-            df,
-            target_col
-        )
-    )
-
-    categorical_cols = [
-        col for col in categorical_cols
-        if col in df.columns
-    ]
-
-    # =====================================================
-    # SMOTE
-    # =====================================================
-
-    try:
-
-        df = apply_smote(
-            df,
-            target_col,
-            categorical_cols
-        )
-
-        optimize_memory()
-
-    except Exception as e:
-
-        print(e)
-
-        write_log(str(e))
-
-    # =====================================================
-    # CTGAN SYNTHETIC DATA
-    # =====================================================
-
-    try:
-
-        epochs = 5 if FAST_MODE else 50
-
-        synthetic_df = generate_ctgan_data(
-            df,
-            target_col,
-            epochs=epochs
-        )
-
-        max_rows = min(
-            len(df),
-            10000
-        )
-
-        if len(synthetic_df) > max_rows:
-
-            synthetic_df = synthetic_df.sample(
-                n=max_rows,
-                random_state=42
+        imbalance_ratio_before, class_counts_before = (
+            detect_imbalance(
+                df,
+                target_col
             )
-
-        df = pd.concat(
-            [df, synthetic_df],
-            ignore_index=True
         )
 
-        optimize_memory()
-
-    except Exception as e:
-
-        print(e)
-
-        write_log(str(e))
-
-    # =====================================================
-    # FAIRNESS BEFORE FIX
-    # =====================================================
-
-    bias_results, fairness_score_before = (
-        calculate_fairness(
-            df,
-            target_col
+        bias_results_before, fairness_before = (
+            calculate_fairness(
+                df,
+                target_col
+            )
         )
+
+    else:
+
+        imbalance_ratio_before = 0
+        fairness_before = 1.0
+        bias_results_before = []
+
+    # ======================================================
+    # TRAIN TEST SPLIT
+    # ======================================================
+
+    X = df.drop(columns=[target_col])
+    y = df[target_col]
+
+    stratify_option = y \
+        if task_type == "classification" \
+        else None
+
+    X_train, X_test, y_train, y_test = train_test_split(
+        X,
+        y,
+        test_size=TEST_SIZE,
+        random_state=RANDOM_STATE,
+        stratify=stratify_option
     )
 
-    print(
-        "\n========== BIAS REPORT (BEFORE FIX) ==========\n"
+    # ======================================================
+    # BEFORE MODEL
+    # ======================================================
+
+    baseline_model = train_model(
+        X_train,
+        y_train,
+        task_type
     )
 
-    if isinstance(bias_results, pd.DataFrame):
-
-        if not bias_results.empty:
-
-            print(
-                bias_results.to_string(index=False)
-            )
-
-        else:
-
-            print(
-                "No Bias Detected"
-            )
-
-    print(
-        f"\nOverall Fairness Score Before Fix : "
-        f"{fairness_score_before:.2f}"
+    baseline_pred = baseline_model.predict(
+        X_test
     )
 
-    # =====================================================
+    baseline_metrics = evaluate_model(
+        y_test,
+        baseline_pred,
+        task_type
+    )
+
+    # ======================================================
+    # TRAIN DATAFRAME
+    # ======================================================
+
+    train_df = pd.concat(
+        [X_train, y_train],
+        axis=1
+    )
+
+    # ======================================================
     # FAIRNESS FIX
-    # =====================================================
+    # ======================================================
 
-    try:
+    if task_type == "classification":
 
-        df = apply_fairness_fix(
-            df,
-            bias_results,
+        train_df = apply_fairness_fix(
+            train_df,
+            bias_results_before,
             target_col
         )
 
-        optimize_memory()
+    # ======================================================
+    # FINAL METRICS
+    # ======================================================
 
-        print(
-            "\nFairness Fix Applied Successfully"
-        )
-
-    except Exception as e:
-
-        print(e)
-
-        write_log(str(e))
-
-    # =====================================================
-    # FAIRNESS AFTER FIX
-    # =====================================================
-
-    fairness_results, fairness_score_after = (
+    bias_results_after, fairness_after = (
         calculate_fairness(
-            df,
+            train_df,
             target_col
         )
     )
-
-    print(
-        "\n========== FAIRNESS RESULTS AFTER FIX ==========\n"
-    )
-
-    if isinstance(fairness_results, pd.DataFrame):
-
-        if not fairness_results.empty:
-
-            print(
-                fairness_results.to_string(index=False)
-            )
-
-        else:
-
-            print(
-                "No Bias Detected After Fix"
-            )
-
-    print(
-        f"\nOverall Fairness Score After Fix : "
-        f"{fairness_score_after:.2f}"
-    )
-
-    # =====================================================
-    # SKEWNESS FIX
-    # =====================================================
-
-    try:
-
-        df = fix_skewness(
-            df,
-            target_col
-        )
-
-        optimize_memory()
-
-        print(
-            "\nSkewness Fixed"
-        )
-
-    except Exception as e:
-
-        print(e)
-
-        write_log(str(e))
-
-    # =====================================================
-    # EDQS AFTER
-    # =====================================================
 
     edqs_after_metrics = calculate_edqs(
-        df,
-        target_col
+        train_df,
+        target_col,
+        task_type
     )
 
-    edqs_after = (
-        edqs_after_metrics["edqs"]
+    edqs_after = edqs_after_metrics["edqs"]
+
+    imbalance_ratio_after, class_counts_after = (
+        detect_imbalance(
+            train_df,
+            target_col
+        )
     )
 
-    # =====================================================
+    # ======================================================
+    # FINAL MODEL
+    # ======================================================
+
+    X_train_final = train_df.drop(
+        columns=[target_col]
+    )
+
+    y_train_final = train_df[target_col]
+
+    model = train_model(
+        X_train_final,
+        y_train_final,
+        task_type
+    )
+
+    y_pred = model.predict(X_test)
+
+    metrics = evaluate_model(
+        y_test,
+        y_pred,
+        task_type
+    )
+
+    # ======================================================
+    # ERI
+    # ======================================================
+
+    eri_before = calculate_eri(
+        fairness_score=fairness_before,
+        accuracy=baseline_metrics.get(
+            "accuracy",
+            0
+        ),
+        imbalance_ratio=imbalance_ratio_before,
+        explainability_score=0.50
+    )
+
+    eri_after = calculate_eri(
+        fairness_score=fairness_after,
+        accuracy=metrics.get(
+            "accuracy",
+            0
+        ),
+        imbalance_ratio=imbalance_ratio_after,
+        explainability_score=0.85
+    )
+
+    # ======================================================
+    # RAI
+    # ======================================================
+
+    rai_before = calculate_rai(
+        edqs_before,
+        fairness_before,
+        baseline_metrics.get(
+            "accuracy",
+            0
+        ),
+        eri_before
+    )
+
+    rai_after = calculate_rai(
+        edqs_after,
+        fairness_after,
+        metrics.get(
+            "accuracy",
+            0
+        ),
+        eri_after
+    )
+
+    # ======================================================
+    # METRICS DICTIONARY
+    # ======================================================
+
+    metrics_data = {
+
+        "EDQS Before": edqs_before,
+        "EDQS After": edqs_after,
+
+        "Fairness Before": fairness_before,
+        "Fairness After": fairness_after,
+
+        "Bias Before": 1 - fairness_before,
+        "Bias After": 1 - fairness_after,
+
+        "ERI Before": eri_before,
+        "ERI After": eri_after,
+
+        "RAI Before": rai_before,
+        "RAI After": rai_after
+    }
+
+    if task_type == "classification":
+
+        metrics_data.update({
+
+            "Accuracy Before":
+            baseline_metrics.get(
+                "accuracy",
+                0
+            ),
+
+            "Accuracy After":
+            metrics.get(
+                "accuracy",
+                0
+            ),
+
+            "Precision Before":
+            baseline_metrics.get(
+                "precision",
+                0
+            ),
+
+            "Precision After":
+            metrics.get(
+                "precision",
+                0
+            ),
+
+            "Recall Before":
+            baseline_metrics.get(
+                "recall",
+                0
+            ),
+
+            "Recall After":
+            metrics.get(
+                "recall",
+                0
+            ),
+
+            "F1 Score Before":
+            baseline_metrics.get(
+                "f1_score",
+                0
+            ),
+
+            "F1 Score After":
+            metrics.get(
+                "f1_score",
+                0
+            )
+        })
+
+    # ======================================================
+    # SAVE METRICS
+    # ======================================================
+
+    append_metrics_to_txt(
+        "FINAL METRICS",
+        metrics_data
+    )
+
+    log_llm_iteration(
+        1,
+        metrics_data
+    )
+
+    # ======================================================
     # VISUALIZATION
-    # =====================================================
-
-    print_section(
-        "VISUALIZATION"
-    )
+    # ======================================================
 
     try:
 
@@ -771,7 +814,7 @@ def main():
 
         plot_before_after_counts(
             df_before,
-            df
+            train_df
         )
 
         save_current_graph(
@@ -779,50 +822,12 @@ def main():
             "before_after_counts"
         )
 
-        plt.figure(figsize=(10, 6))
-
-        plot_boxplots(
-            df_before,
-            df
-        )
-
-        save_current_graph(
-            graph_dir,
-            "boxplots"
-        )
-
-        if not FAST_MODE:
-
-            plt.figure(figsize=(10, 8))
-
-            plot_heatmaps(
-                df_before,
-                df
-            )
-
-            save_current_graph(
-                graph_dir,
-                "heatmaps"
-            )
-
-        plt.figure(figsize=(10, 6))
-
-        plot_piecharts(
-            df_before,
-            df,
-            categorical_cols
-        )
-
-        save_current_graph(
-            graph_dir,
-            "piecharts"
-        )
-
         plt.figure(figsize=(8, 5))
 
         plot_edqs_comparison(
             edqs_before,
-            edqs_after
+            edqs_after,
+            task_type
         )
 
         save_current_graph(
@@ -830,96 +835,79 @@ def main():
             "edqs_comparison"
         )
 
-        plt.close('all')
+        fairness_comparison_chart(
+            fairness_before,
+            fairness_after,
+            graph_dir
+        )
 
-        optimize_memory()
+        plot_model_metrics_before_after(
+            baseline_metrics,
+            metrics,
+            graph_dir
+        )
 
-        print(
-            "\nAll Graphs Saved Successfully"
+        bias_heatmap(
+            train_df,
+            graph_dir
         )
 
     except Exception as e:
 
         print(e)
 
-        write_log(str(e))
+    # ======================================================
+    # LLM
+    # ======================================================
 
-    # =====================================================
-    # MODEL TRAINING
-    # =====================================================
-
-    print_section(
-        "MODEL TRAINING"
+    metrics_path = save_metrics(
+        metrics_data
     )
 
-    try:
+    with open(
+        metrics_path,
+        "r",
+        encoding="utf-8"
+    ) as f:
 
-        X = df.drop(
-            columns=[target_col]
-        )
+        metrics_text = f.read()
 
-        y = df[target_col]
-
-        stratify_option = y if y.nunique() > 1 else None
-
-        X_train, X_test, y_train, y_test = (
-
-            train_test_split(
-                X,
-                y,
-                test_size=0.2,
-                random_state=42,
-                stratify=stratify_option
-            )
-        )
-
-        model = train_model(
-            X_train,
-            y_train
-        )
-
-        y_pred = model.predict(X_test)
-
-        metrics = evaluate_model(
-            y_test,
-            y_pred
-        )
-
-        print(
-            "\n========== MODEL METRICS =========="
-        )
-
-        for key, value in metrics.items():
-
-            print(
-                f"{key} : {value:.4f}"
-            )
-
-        save_model(model)
-
-        optimize_memory()
-
-    except Exception as e:
-
-        print(e)
-
-        write_log(str(e))
-
-    # =====================================================
-    # SAVE FINAL DATASET
-    # =====================================================
-
-    os.makedirs(
-        "outputs",
-        exist_ok=True
+    llm_analysis = generate_llm_analysis(
+        metrics_text
     )
+
+    recommendations = generate_llm_recommendations(
+        metrics_text
+    )
+
+    print(
+        "\n========== LLM ANALYSIS =========="
+    )
+
+    print(llm_analysis)
+
+    print(
+        "\n========== LLM RECOMMENDATIONS =========="
+    )
+
+    print(recommendations)
+
+    # ======================================================
+    # SAVE MODEL
+    # ======================================================
+
+    save_model(model)
+
+    # ======================================================
+    # SAVE DATASET
+    # ======================================================
 
     output_path = os.path.join(
         "outputs",
         "final_responsible_ai_dataset.csv"
     )
 
-    df.to_csv(
+    train_df.to_csv(
         output_path,
         index=False
     )
@@ -928,56 +916,15 @@ def main():
         f"\nFinal Dataset Saved:\n{output_path}"
     )
 
-    # =====================================================
-    # PDF REPORT
-    # =====================================================
-
-    report_content = f"""
-
-RESPONSIBLE AI REPORT
-
-====================================
-
-Dataset:
-{dataset_name}
-
-EDQS BEFORE:
-{edqs_before:.2f}
-
-EDQS AFTER:
-{edqs_after:.2f}
-
-====================================
-
-Graphs Folder:
-{graph_dir}
-
-"""
-
-    generate_pdf_report(
-        "outputs/responsible_ai_report.pdf",
-        report_content
-    )
-
-    # =====================================================
-    # FINAL CLEANUP
-    # =====================================================
-
-    plt.close('all')
-
     optimize_memory()
-
-    # =====================================================
-    # COMPLETED
-    # =====================================================
 
     print_section(
         "RESPONSIBLE AI PIPELINE COMPLETED"
     )
 
-# =========================================================
-# RUN PIPELINE
-# =========================================================
+# ==========================================================
+# RUN
+# ==========================================================
 
 if __name__ == "__main__":
 
